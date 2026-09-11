@@ -6,3 +6,6 @@ out/*.wav
 lines/**/*.mp3
 
 __pycache__/
+
+# renders stay local; timelines are kept
+out/*.mp3

@@ -2,7 +2,7 @@
 
 Auld Lang Syne sung in Hebrew in a cloned voice, with an orchestral-pop backing. Built from free and open models plus about two dollars of rented GPU.
 
-**Listen:** `out/ace_mandy_arranged.mp3` and `out/ace_jack_arranged.mp3` are the final tracks. `out/ace_*_vocal.mp3` are the same vocals dry.
+Rendered audio is not in the repo; run the pipeline below to produce `out/ace_mandy_arranged.mp3` and `out/ace_jack_arranged.mp3`.
 
 ## How it works
 
@@ -60,7 +60,7 @@ Both models have free public Hugging Face Spaces, but they run on ZeroGPU with a
 - **ACE-Step** on an Nvidia L4 or A10G small (24 GB, about $1/hour). Add a Space variable `SERVICE_MODE_DIT_MODEL_2` with a single-space value. The stock app loads two DiT models plus a 1.7B LM and runs out of memory otherwise.
 - **Seed-VC** on a T4 small ($0.40/hour). Add `python_version: "3.10"` (quoted) to the README front matter. The default Python 3.13 has no scipy 1.13 wheel and the build fails.
 
-The session that produced the tracks in `out/` cost about $2.
+The session that produced the final tracks cost about $2.
 
 ## Knobs
 
@@ -70,7 +70,7 @@ The session that produced the tracks in `out/` cost about $2.
 
 ## Also in here
 
-Earlier rungs of the ladder, kept for reference: `auld_lang_syne_he.py` (one-shot TTS), `autotune.py` (scale snap, can't add a melody), `melodize.py` (force melody by phrase), `accomp.py` (sine-synth piano). Their outputs are the `auld_lang_syne_he*.mp3` files.
+Earlier rungs of the ladder, kept for reference: `auld_lang_syne_he.py` (one-shot TTS), `autotune.py` (scale snap, can't add a melody), `melodize.py` (force melody by phrase), `accomp.py` (sine-synth piano). Their outputs are `out/auld_lang_syne_he*.mp3` when run.
 
 ## Notes
 
