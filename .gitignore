@@ -11,3 +11,4 @@ __pycache__/
 out/*.mp3
 out/*.flac
 out/*.flac.abc
+out/stems/

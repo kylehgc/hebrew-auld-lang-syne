@@ -53,16 +53,21 @@ ffmpeg -i out/ace_mandy.wav -i out/mandy_band.wav -filter_complex "[0:a]aecho=0.
 
 Another singer: a new reference clip and a new `--tag`. Jack Black was `--transpose -12`; the auto-transpose picked -17 for his low clone, which was too muddy.
 
-## YuE2 alternative for step 3
+## YuE2 path (the one that won)
 
-YuE2 takes a melody as an ABC score directly, so steps 1–2 aren't needed to give it the tune. `auld_lang_syne.abc` is the melody, `lyrics_he.txt` the words, `yue2_space/` a 30-line Gradio wrapper to run as a private Space (A10G small, Python 3.12), and `yue2.py` the client:
+YuE2 sings a melody supplied as an ABC score, so steps 1–2 aren't needed. **The score must be in YuE2's native dialect** or the model quietly ignores it: full bars only (L:1/16, 16 units each), the pickup written as a rest inside a full first bar, ties across barlines, blocks of at most four bars per `V: Vocal` / `V: Ins` pair. `make_abc.py` writes that from the note list; hand-written scores with a partial pickup bar produced Hebrew songs that weren't Auld Lang Syne at all.
 
 ```bash
+python make_abc.py > auld_lang_syne_native.abc            # melody only, for cot=melody
+python make_abc.py --chords > auld_lang_syne_native_chords.abc
 set YUE2_URL=https://<you>-yue2.hf.space
-python yue2.py out/yue2_acapella.flac --seed 831001 --style "Hebrew, a cappella, solo male baritone lead vocal only, no instruments, slow tender ballad, 80 BPM"
+python yue2.py out/take.flac --seed 7 --cot melody --abc auld_lang_syne_native.abc --style "Hebrew, Auld Lang Syne, traditional Scottish folk ballad, one solo male baritone lead vocal, no backing vocals, soft solo piano, slow, 80 BPM"
+python -m demucs --two-stems=vocals -n htdemucs -o out/stems out/take.flac   # CPU is fine
+python seedvc.py out/stems/htdemucs/take/vocals.wav ref/jack_clip.wav out/take_jack.wav
+ffmpeg -i out/take_jack.wav -i out/stems/htdemucs/take/no_vocals.wav -filter_complex "[0:a]pan=stereo|c0=c0|c1=c0[v];[v][1:a]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-14:TP=-1.5" out/take_jack.mp3
 ```
 
-Drop the a cappella wording to get a full song with YuE2's own accompaniment. Then Seed-VC as above. YuE2 scores higher than ACE-Step on overall production quality in its own benchmark but worse on lyric intelligibility; A/B both.
+`yue2_space/` is the 30-line Gradio wrapper to run as a private Space (A10G small, Python 3.12). Ask for a solo voice with soft piano rather than a cappella: a cappella is out of distribution and the model either stops early or runs to the length cap. Leave sampling at the defaults; guidance above 1 made length unstable. Demucs then strips the piano before Seed-VC.
 
 ## Hosting the GPU steps
 
