@@ -9,3 +9,5 @@ __pycache__/
 
 # renders stay local; timelines are kept
 out/*.mp3
+out/*.flac
+out/*.flac.abc

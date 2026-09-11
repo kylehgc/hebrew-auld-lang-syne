@@ -53,6 +53,17 @@ ffmpeg -i out/ace_mandy.wav -i out/mandy_band.wav -filter_complex "[0:a]aecho=0.
 
 Another singer: a new reference clip and a new `--tag`. Jack Black was `--transpose -12`; the auto-transpose picked -17 for his low clone, which was too muddy.
 
+## YuE2 alternative for step 3
+
+YuE2 takes a melody as an ABC score directly, so steps 1–2 aren't needed to give it the tune. `auld_lang_syne.abc` is the melody, `lyrics_he.txt` the words, `yue2_space/` a 30-line Gradio wrapper to run as a private Space (A10G small, Python 3.12), and `yue2.py` the client:
+
+```bash
+set YUE2_URL=https://<you>-yue2.hf.space
+python yue2.py out/yue2_acapella.flac --seed 831001 --style "Hebrew, a cappella, solo male baritone lead vocal only, no instruments, slow tender ballad, 80 BPM"
+```
+
+Drop the a cappella wording to get a full song with YuE2's own accompaniment. Then Seed-VC as above. YuE2 scores higher than ACE-Step on overall production quality in its own benchmark but worse on lyric intelligibility; A/B both.
+
 ## Hosting the GPU steps
 
 Both models have free public Hugging Face Spaces, but they run on ZeroGPU with a small daily quota, and ACE-Step's cover mode crashes there (its audio encoder lands on CPU). Duplicate each Space into your account on paid hardware; both sleep after 15 minutes idle.
