@@ -1,0 +1,8 @@
+# 30 MB SoundFont, re-download per README
+sf/*.sf2
+
+# intermediate renders
+out/*.wav
+lines/**/*.mp3
+
+__pycache__/
