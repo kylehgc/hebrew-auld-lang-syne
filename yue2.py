@@ -16,7 +16,7 @@ cfg = float(opt("--cfg", 0))
 style = opt("--style", "Hebrew, slow tender ballad, warm male baritone lead vocal, piano and strings, intimate, unhurried phrasing, 80 BPM")
 abc_file = opt("--abc", "auld_lang_syne_chords.abc" if cot == "full" else "auld_lang_syne.abc")
 abc = open(abc_file, encoding="utf-8").read() if cot != "off" else ""
-lyrics = open("lyrics_he.txt", encoding="utf-8").read()
+lyrics = open(opt("--lyrics", "lyrics_he.txt"), encoding="utf-8").read()
 
 c = Client(os.environ["YUE2_URL"], token=os.environ.get("HF_TOKEN"))
 audio, score, truncated = c.predict(style, lyrics, abc, cot, seed, temperature, cfg, api_name="/predict")

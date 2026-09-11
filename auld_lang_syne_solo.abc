@@ -1,0 +1,13 @@
+X:1
+T:
+M:4/4
+L:1/8
+Q:1/4=80
+V: Vocal clef=treble name="Vocal Melody" snm="Vocal"
+K:F
+% verse
+V: Vocal
+"F"C2 | "F"F3 E F2 A2 | "C7"G3 F G2 A2 | "F"F3 F A2 c2 | "Bb"d6 d2 | "F"c3 A A2 F2 | "C7"G3 F G2 A2 | "Bb"F3 D "C7"D2 C2 | "F"F6 |
+% chorus
+V: Vocal
+"F"d2 | "F"c3 A A2 F2 | "C7"G3 F G2 d2 | "F"c3 A A2 c2 | "Bb"d6 d2 | "F"c3 A A2 F2 | "C7"G3 F G2 A2 | "Bb"F3 D "C7"D2 C2 | "F"F8 |
