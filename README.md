@@ -2,7 +2,20 @@
 
 Auld Lang Syne sung in Hebrew in a cloned voice, with an orchestral-pop backing. Built from free and open models plus about two dollars of rented GPU.
 
-Rendered audio is not in the repo; run the pipeline below to produce `out/ace_mandy_arranged.mp3` and `out/ace_jack_arranged.mp3`.
+Rendered audio is not in the repo. The best results came from the **YuE2 path** below (`out/yue2_<take>_jack.mp3`, `out/yue2_<take>_mandy.mp3`); the ACE-Step path is documented as the earlier route.
+
+## Summary of what worked and what didn't
+
+| Stage | Tool | Verdict |
+|---|---|---|
+| Voice-cloned speech | Fish Audio S2.1 Pro via OpenRouter (free) | Fine as speech; can't sing a specific tune |
+| Forcing a melody onto speech | WORLD vocoder (`sing.py`) | On-pitch but audibly robotic; kept only as a source for ACE-Step cover mode |
+| Sung performance A | ACE-Step 1.5 cover mode on the arranged track | Holds the melody, clean single voice, lower fidelity |
+| Sung performance B | YuE2 with a **native-dialect** ABC score | Best sound; ignores the tune unless the score is on its grid (see below) |
+| Timbre swap | Seed-VC zero-shot singing voice conversion | Works on either source; the final voice quality comes mostly from here |
+| Backing | SoundFont arrangement (`arrange.py`) or the piano YuE2 wrote, separated with Demucs | Both fine |
+
+Total GPU spend for everything in this README: about $4 on rented Hugging Face hardware.
 
 ## How it works
 
