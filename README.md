@@ -1,30 +1,26 @@
 # Hebrew Auld Lang Syne
 
-Auld Lang Syne sung in Hebrew in a cloned voice, with a sampled orchestral-pop arrangement. Zero cost end to end.
+Auld Lang Syne sung in Hebrew in a cloned voice, with an orchestral-pop backing. Built from free and open models plus about two dollars of rented GPU.
 
-Final tracks: `out/auld_lang_syne_he_arranged.mp3` (Mandy Patinkin clone), `out/jack_arranged.mp3` (Jack Black clone)
+**Listen:** `out/ace_mandy_arranged.mp3` and `out/ace_jack_arranged.mp3` are the final tracks. `out/ace_*_vocal.mp3` are the same vocals dry.
 
-## Pipeline
+## How it works
 
-1. **Reference clip** — `ref/ref_clip_28s.wav`, 28 s of a cappella singing pulled from YouTube with yt-dlp + ffmpeg.
-2. **Voice clone TTS** — `sing.py` sends each lyric line to Fish Audio S2.1 Pro (free) via OpenRouter with the clip as `input_references`. Lines cache in `lines/<tag>/`.
-3. **Melody** — `sing.py` splits each line into syllables by energy peaks, maps one syllable per melody note, stretches vowels, and rewrites pitch with the WORLD vocoder. Adds scoops, detune, drift, vibrato, dynamics. Writes `out/<tag>_sung_dry.wav` and `out/<tag>_timeline.json` (exact note timings).
-4. **Re-voice** — `seedvc.py` runs the dry vocal through Seed-VC (zero-shot singing voice conversion, free HF Space) with the reference clip. Removes vocoder buzz, restores timbre.
-5. **Arrangement** — `arrange.py` renders piano / strings / cello / bass / harp (verse) + flute / choir / glockenspiel (chorus) from the timeline through a GM SoundFont, mixes under the vocal.
-
-```bash
-set OPENROUTER_API_KEY=sk-or-...
-python sing.py ref/ref_clip.wav --tag mandy                       # -> out/mandy_sung_dry.wav, out/mandy_timeline.json
-python seedvc.py out/mandy_sung_dry.wav ref/ref_clip_28s.wav out/seedvc_out_28s.wav
-python arrange.py out/seedvc_out_28s.wav out/auld_lang_syne_he_arranged.mp3 --tag mandy
-
-# another singer: new reference clip, new tag
-python sing.py ref/jack_clip.wav --tag jack --transpose -12
-python seedvc.py out/jack_sung_dry.wav ref/jack_clip.wav out/jack_seedvc.wav
-python arrange.py out/jack_seedvc.wav out/jack_arranged.mp3 --tag jack
+```
+lyrics ─► sing.py ─► arrange.py ─► acestep.py (cover) ─► seedvc.py ─► ffmpeg mix
+          TTS clone   sampled band   real sung take       target voice   final mp3
+          + melody
 ```
 
-## Setup
+1. **`sing.py`** — clones a reference singer per lyric line with Fish Audio S2.1 Pro (free on OpenRouter), splits each line into syllables, maps one syllable per melody note with the WORLD vocoder, and humanizes the pitch. Output is on-melody but sounds like a vocoder. Also writes `out/<tag>_timeline.json`, the exact time of every note.
+2. **`arrange.py`** — reads that timeline and renders piano, strings, cello, bass and harp for the verse, adding flute, choir and glockenspiel for the chorus, through a General MIDI SoundFont. Mixes it under a vocal.
+3. **`acestep.py`** — runs ACE-Step 1.5 in *cover* mode on the arranged track. ACE-Step re-sings the melody and structure with the Hebrew lyrics as a real performance: breath, phrasing, timing. Asked for a cappella so the output is a clean vocal. This is the step that removes the autotune character.
+4. **`seedvc.py`** — Seed-VC zero-shot singing voice conversion. Takes the ACE-Step vocal and a 15–28 s reference clip and returns the same performance in the reference singer's voice. No training.
+5. **ffmpeg** mixes the converted vocal over the `arrange.py` band.
+
+Steps 1–2 exist to give ACE-Step a melodically correct source to cover. Any well-sung take would do instead, including a human one.
+
+## Running it
 
 ```bash
 pip install numpy soundfile pyworld "setuptools<81" gradio_client
@@ -32,17 +28,50 @@ pip install --no-deps tinysoundfont
 curl -L -o sf/GeneralUser.sf2 https://github.com/mrbumpy409/GeneralUser-GS/raw/main/GeneralUser-GS.sf2
 ```
 
-Needs ffmpeg on PATH. Python 3.14 on Windows works.
+ffmpeg on PATH. Python 3.14 on Windows works.
+
+```bash
+# 1–2. vocoder vocal + band (free; needs an OpenRouter key)
+set OPENROUTER_API_KEY=sk-or-...
+python sing.py ref/ref_clip.wav --tag mandy
+python arrange.py out/seedvc_out_28s.wav out/auld_lang_syne_he_arranged.mp3 --tag mandy
+
+# 3. ACE-Step cover, a cappella (your own Space, see below)
+set ACE_URL=https://<you>-ace-step-v1-5.hf.space
+set HF_TOKEN=hf_...
+python acestep.py out/ace_acapella_70.mp3 --cover out/auld_lang_syne_he_arranged.mp3 --strength 0.7 ^
+  --caption "a cappella, solo male baritone vocal only, no instruments, dry studio vocal, slow tender ballad, clear Hebrew diction, 80 bpm"
+ffmpeg -i out/ace_acapella_70.mp3 -ac 1 -ar 44100 out/ace_acapella_70.wav
+
+# 4. voice conversion (your own Space, see below)
+set SEEDVC_URL=https://<you>-seed-vc.hf.space
+python seedvc.py out/ace_acapella_70.wav ref/ref_clip_28s.wav out/ace_mandy.wav
+
+# 5. mix over the band arrange.py already rendered
+ffmpeg -i out/ace_mandy.wav -i out/mandy_band.wav -filter_complex "[0:a]aecho=0.9:0.3:60:0.12,pan=stereo|c0=c0|c1=c0[v];[1:a]volume=-6dB,aecho=0.8:0.5:110:0.22[b];[v][b]amix=inputs=2:duration=longest:normalize=0,loudnorm=I=-14:TP=-1.5" -b:a 192k out/ace_mandy_arranged.mp3
+```
+
+Another singer: a new reference clip and a new `--tag`. Jack Black was `--transpose -12`; the auto-transpose picked -17 for his low clone, which was too muddy.
+
+## Hosting the GPU steps
+
+Both models have free public Hugging Face Spaces, but they run on ZeroGPU with a small daily quota, and ACE-Step's cover mode crashes there (its audio encoder lands on CPU). Duplicate each Space into your account on paid hardware; both sleep after 15 minutes idle.
+
+- **ACE-Step** on an Nvidia L4 or A10G small (24 GB, about $1/hour). Add a Space variable `SERVICE_MODE_DIT_MODEL_2` with a single-space value. The stock app loads two DiT models plus a 1.7B LM and runs out of memory otherwise.
+- **Seed-VC** on a T4 small ($0.40/hour). Add `python_version: "3.10"` (quoted) to the README front matter. The default Python 3.13 has no scipy 1.13 wheel and the build fails.
+
+The session that produced the tracks in `out/` cost about $2.
 
 ## Knobs
 
-- `sing.py --tag NAME --bpm 80 --transpose -10 --seed 7` — transpose is auto-picked from the speaker's median pitch if omitted; check it, a deep voice can auto-pick too low (Jack came out -17, -12 sounds better).
-- `arrange.py --band_db -6 --vocal_db 0 --intro 4` — instrument levels and panning are the `VOLUME` / `PAN` dicts at the top.
-- Lyrics live in `LINES` in `sing.py`; syllable counts must stay 8,6,8,6,8,6,8,6 to match the melody.
+- `sing.py --tag NAME --bpm 80 --transpose -10 --seed 7`. Lyrics are `LINES` in the file; syllable counts must stay 8,6,8,6,8,6,8,6 to match the melody.
+- `acestep.py --strength 0.5..0.85`. Higher tracks the source melody more tightly. `--model acestep-v15-turbo` for the 2B model on smaller cards.
+- `arrange.py --band_db -6 --vocal_db 0 --intro 4`. Instrument levels and panning are the `VOLUME` / `PAN` dicts at the top.
 
-## Other scripts
+## Also in here
 
-- `auld_lang_syne_he.py` — original one-shot TTS call (whole lyric, no melody).
-- `autotune.py` — scale-snap auto-tune. Fixes pitch, can't add a melody.
-- `melodize.py` — forces the melody onto an existing vocal by phrase. Superseded by `sing.py`.
-- `accomp.py` — earlier sine-synth piano accompaniment. Superseded by `arrange.py`.
+Earlier rungs of the ladder, kept for reference: `auld_lang_syne_he.py` (one-shot TTS), `autotune.py` (scale snap, can't add a melody), `melodize.py` (force melody by phrase), `accomp.py` (sine-synth piano). Their outputs are the `auld_lang_syne_he*.mp3` files.
+
+## Notes
+
+The reference clips are short excerpts of public performances used purely as timbre references. The generated vocals are synthetic. Don't present them as the real singers.
